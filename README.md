@@ -5,18 +5,18 @@ This project is a **Streamlit-based web app** that summarizes documents (`.pdf`,
 # Run in VS Code
 
 ```bash
-git clone https://github.com/yourusername/document-summarizer-rag.git
-cd document-summarizer-rag
+git clone https://github.com/JawadAhmadCS/Document-Summarizer-RAG-Groq.git
+cd Document-Summarizer-RAG-Groq
 pip install -r requirements.txt
 ```
 
-Create a .env file and add your Groq API key:
+Create a `.streamlit/secrets.toml` file and add your Groq API key:
 
-```env
-GROQ_API_KEY=your_actual_key_here
-GROQ_CHAT_MODEL=llama-3.3-70b-versatile
-LLM_TEMP=0.0
-LLM_MAX_TOKENS=300
+```toml
+GROQ_API_KEY = "your_groq_api_key"
+GROQ_CHAT_MODEL = "llama3-70b-8192"
+LLM_TEMP = 0.0
+LLM_MAX_TOKENS = 300
 ```
 
 Than run this in terminal:
