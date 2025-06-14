@@ -7,3 +7,4 @@ pymupdf
 chromadb
 groq
 langchain-groq
+streamlit
