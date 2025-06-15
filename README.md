@@ -14,7 +14,7 @@ Create a `.streamlit/secrets.toml` file and add your Groq API key:
 
 ```toml
 GROQ_API_KEY = "your_groq_api_key"
-GROQ_CHAT_MODEL = "llama3-70b-8192"
+GROQ_CHAT_MODEL = "llama-3.3-70b-versatile"
 LLM_TEMP = 0.0
 LLM_MAX_TOKENS = 300
 ```
