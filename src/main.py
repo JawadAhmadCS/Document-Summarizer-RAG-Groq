@@ -1,8 +1,25 @@
 import streamlit as st
-from embed import embed_uploaded_text
+import tempfile
+import fitz  # PyMuPDF
+from embed import build_or_load_index
 from summarize import make_summarizer
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import tempfile
+
+def read_uploaded_file(uploaded_file):
+    ext = uploaded_file.name.split('.')[-1].lower()
+
+    if ext == "pdf":
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(uploaded_file.read())
+            tmp_file_path = tmp_file.name
+
+        doc = fitz.open(tmp_file_path)
+        text = "\n".join([page.get_text() for page in doc])
+        doc.close()
+    else:
+        text = uploaded_file.read().decode("utf-8", errors="ignore")
+
+    return text
 
 def chunk_texts(texts):
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
@@ -15,20 +32,27 @@ def main():
     uploaded_file = st.file_uploader("Upload a document", type=["pdf", "txt", "md"])
 
     if uploaded_file is not None:
-        file_text = uploaded_file.read().decode("utf-8", errors="ignore")
+        file_text = read_uploaded_file(uploaded_file)
 
-        st.subheader("📄 Extracted Text")
-        st.text_area("File Content", file_text[:2000], height=200)
+        st.markdown("### 📜 Extracted Text")
+        with st.expander("Click to preview extracted content"):
+            st.write(file_text[:1500] + "..." if len(file_text) > 1500 else file_text)
 
-        chunks = chunk_texts([file_text])
-        vector_store = embed_uploaded_text(chunks)
+        prompt = st.text_input("Prompt:", value="Summarize the document")
 
-        summarizer = make_summarizer(vector_store)
+        if st.button("🚀 Generate Summary"):
+            with st.spinner("Embedding and summarizing..."):
+                chunks = chunk_texts([file_text])
+                vector_store = build_or_load_index(chunks)
 
-        if st.button("Summarize the document"):
-            with st.spinner("Running summarizer..."):
-                question = "Summarize the document"
-                result = summarizer.invoke({"query": question})
+                summarizer = make_summarizer(
+                    vector_store,
+                    model=st.secrets["GROQ_CHAT_MODEL"],
+                    temp=0.2,
+                    max_tokens=512
+                )
+
+                result = summarizer.invoke({"query": prompt})
                 st.subheader("🧠 Summary")
                 st.write(result['result'])
 
