@@ -8,3 +8,4 @@ chromadb
 groq
 langchain-groq
 streamlit
+streamlit-lottie
