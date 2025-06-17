@@ -2,7 +2,8 @@
 
 This project is a **Streamlit-based web app** that summarizes documents (`.pdf`, `.txt`, `.md`) using **Retrieval-Augmented Generation (RAG)** powered by **Groq's LLaMA 3 model**. It chunks and embeds text using **HuggingFace sentence transformers** and performs intelligent summarization via a **vector store (FAISS)** and **LLM-based retrieval pipeline**. Fast and scalable, ideal for summarizing large documents with high accuracy.
 
-### Try: [docs-sum.streamlit.app](https://docs-sum.streamlit.app)
+<h3>Try: <a href="https://docs-sum.streamlit.app" target="_blank">docs-sum.streamlit.app</a></h3>
+
 # Run in VS Code
 
 ```bash
