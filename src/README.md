@@ -1,1 +1,1 @@
-model folder and urils file is temporary and will be deleted after some experimentes
+model folder and ocr_utils.py file is temporary and will be deleted after some experimentes
