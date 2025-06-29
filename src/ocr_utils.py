@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import os
+
 # fLoad the trained model from disk
 def load_model():
     model_path = os.path.join(os.path.dirname(__file__), 'model', 'CustomCnn_model.keras')
@@ -43,7 +44,6 @@ def get_mapping():
     return {c: i for i, c in enumerate(chars)}, {i: c for i, c in enumerate(chars)}
 
 # Extract characters and run OCR
-
 def extract(image):
     model = load_model()
     mapping, mapping_inverse = get_mapping()
@@ -80,5 +80,3 @@ def extract(image):
         chars.append(' ')
 
     return ''.join(chars[:-1])
-
-#there can be spelling mistake in this text words think what it can be
