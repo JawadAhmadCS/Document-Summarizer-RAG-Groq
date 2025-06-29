@@ -10,6 +10,4 @@ langchain-groq
 streamlit
 streamlit-lottie
 Pillow
-tensorflow
-numpy
 scipy
