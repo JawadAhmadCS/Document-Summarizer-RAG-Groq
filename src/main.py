@@ -1,5 +1,7 @@
 import sys
 import os
+from PIL import Image
+import numpy as np
 import tempfile
 import fitz  # PyMuPDF
 import streamlit as st
@@ -8,6 +10,7 @@ import requests
 from embed import build_or_load_index
 from summarize import make_summarizer
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from ocr_utils import extract as extract_text_from_image
 
 # 🎨 Page config
 st.set_page_config(page_title="Document Summarizer", page_icon="🧠", layout="centered")
@@ -44,9 +47,10 @@ if lottie_animation:
 
 
 # 📥 File uploader
-uploaded_file = st.file_uploader("Upload a document", type=["pdf", "txt", "md"])
+#uploaded_file = st.file_uploader("Upload a document", type=["pdf", "txt", "md"])
+uploaded_file = st.file_uploader("Upload a document", type=["pdf", "txt", "md", "png", "jpg", "jpeg"])
 
-def read_uploaded_file(uploaded_file):
+def reuad_uploaded_file(uploaded_file):
     ext = uploaded_file.name.split('.')[-1].lower()
     if ext == "pdf":
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
@@ -58,6 +62,27 @@ def read_uploaded_file(uploaded_file):
     else:
         text = uploaded_file.read().decode("utf-8", errors="ignore")
     return text
+def read_uploaded_file(uploaded_file):
+    ext = uploaded_file.name.split('.')[-1].lower()
+    
+    if ext in ["pdf"]:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(uploaded_file.read())
+            tmp_file_path = tmp_file.name
+        doc = fitz.open(tmp_file_path)
+        text = "\n".join([page.get_text() for page in doc])
+        doc.close()
+    
+    elif ext in ["png", "jpg", "jpeg"]:
+        image = Image.open(uploaded_file).convert("RGB")
+        image_np = np.array(image)
+        text = extract_text_from_image(image_np)
+
+    else:
+        text = uploaded_file.read().decode("utf-8", errors="ignore")
+    
+    return text
+
 
 def chunk_texts(text):
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
@@ -77,6 +102,12 @@ def generate_summary(text: str, prompt: str, model: str, temp: float, max_tokens
 
 # 📄 If document uploaded
 if uploaded_file:
+    ext = uploaded_file.name.split('.')[-1].lower()
+    
+    if ext in ["png", "jpg", "jpeg"]:
+        st.warning("⚠️ Note: This model is **not fully trained** for extracting text from images. It may produce inaccurate results. For best performance, use PDF, TXT, or MD files.")
+
+
     text = read_uploaded_file(uploaded_file)
 
     st.markdown("### 📜 Extracted Text")
@@ -102,3 +133,6 @@ if uploaded_file:
                 st.error(f"❌ Error: {str(e)}")
 else:
     st.info("👆 Upload a document above to get started.")
+
+
+# there can be spelling mistake in this text words think what it can be
