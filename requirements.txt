@@ -11,3 +11,4 @@ streamlit
 streamlit-lottie
 Pillow
 scipy
+tensorflow
