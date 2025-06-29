@@ -9,3 +9,4 @@ groq
 langchain-groq
 streamlit
 streamlit-lottie
+opencv-python
