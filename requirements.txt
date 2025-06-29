@@ -10,3 +10,4 @@ langchain-groq
 streamlit
 streamlit-lottie
 opencv-python
+opencv-python-headless
