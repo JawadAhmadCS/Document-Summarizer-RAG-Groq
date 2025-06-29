@@ -9,6 +9,3 @@ groq
 langchain-groq
 streamlit
 streamlit-lottie
-Pillow
-scipy
-tensorflow
