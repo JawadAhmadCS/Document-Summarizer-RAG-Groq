@@ -80,4 +80,5 @@ def extract(image):
         chars.append(' ')
 
     return ''.join(chars[:-1])
+
 #there can be spelling mistake in this text words think what it can be
