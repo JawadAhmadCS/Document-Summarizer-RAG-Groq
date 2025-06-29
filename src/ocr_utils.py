@@ -1,9 +1,9 @@
-import cv2
+from PIL import Image, ImageOps
 import numpy as np
 import tensorflow as tf
 import os
 
-# fLoad the trained model from disk
+# Load trained model
 def load_model():
     model_path = os.path.join(os.path.dirname(__file__), 'model', 'CustomCnn_model.keras')
     model = tf.keras.models.load_model(model_path)
@@ -11,67 +11,67 @@ def load_model():
 
 # Convert image to grayscale
 def convert_2_gray(image):
-    return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    return ImageOps.grayscale(image)
 
-# Binarize image using Otsu thresholding
+# Binarize image using simple threshold (PIL version of Otsu)
 def binarization(image):
-    img, thresh = cv2.threshold(image, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
-    return img, thresh
+    gray_np = np.array(image)
+    threshold = gray_np.mean()
+    binary = (gray_np < threshold).astype(np.uint8) * 255
+    return Image.fromarray(binary), binary
 
-# Dilation to connect components
-def dilate(image, words=False):
-    img = image.copy()
-    m = 3
-    n = m - 2
-    itrs = 4
-    if words:
-        m = 6
-        n = m
-        itrs = 3
-    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (n, m))
-    dilation = cv2.dilate(img, rect_kernel, iterations=itrs)
-    return dilation
+# Dummy dilation (PIL doesn’t have direct morphological ops)
+def dilate(image_array, words=False):
+    from scipy.ndimage import binary_dilation
+    structure = np.ones((3, 2)) if not words else np.ones((6, 6))
+    dilated = binary_dilation(image_array, structure=structure).astype(np.uint8) * 255
+    return Image.fromarray(dilated)
 
-# Find bounding boxes for characters or words
-def find_rect(image):
-    contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    rects = [cv2.boundingRect(cnt) for cnt in contours]
+# Find rectangular bounding boxes
+def find_rect(image_array):
+    from scipy.ndimage import label, find_objects
+    labeled, num = label(image_array > 0)
+    boxes = find_objects(labeled)
+    rects = []
+    for box in boxes:
+        if box is not None:
+            y1, y2 = box[0].start, box[0].stop
+            x1, x2 = box[1].start, box[1].stop
+            rects.append((x1, y1, x2 - x1, y2 - y1))
     return sorted(rects, key=lambda x: x[0])
 
-# Character mapping for lowercase letters
+# Mapping for lowercase characters
 def get_mapping():
     chars = 'abcdefghijklmnopqrstuvwxyz'
     return {c: i for i, c in enumerate(chars)}, {i: c for i, c in enumerate(chars)}
 
-# Extract characters and run OCR
-def extract(image):
+# Extract characters from image
+def extract(pil_image):
     model = load_model()
     mapping, mapping_inverse = get_mapping()
     chars = []
 
-    image_cpy = image.copy()
-    _, bin_img = binarization(convert_2_gray(image_cpy))
-    full_dil_img = dilate(bin_img, words=True)
-    words = find_rect(full_dil_img)
+    img_gray = convert_2_gray(pil_image)
+    bin_img, bin_arr = binarization(img_gray)
+    full_dil_img = dilate(bin_arr, words=True)
+    word_boxes = find_rect(np.array(full_dil_img))
 
-    for word in words:
+    for word in word_boxes:
         x, y, w, h = word
-        img = image_cpy[y:y+h, x:x+w]
+        word_img = pil_image.crop((x, y, x + w, y + h))
+        gray_word = convert_2_gray(word_img)
+        bin_word, bin_arr = binarization(gray_word)
+        dil_word = dilate(bin_arr)
+        char_boxes = find_rect(np.array(dil_word))
 
-        _, bin_img = binarization(convert_2_gray(img))
-        dil_img = dilate(bin_img)
-        char_parts = find_rect(dil_img)
-
-        for char in char_parts:
+        for char in char_boxes:
             cx, cy, cw, ch = char
-            ch_img = img[cy:cy+ch, cx:cx+cw]
-
-            white_img = np.full((32, 32, 1), 255, dtype=np.uint8)
-            resized = cv2.resize(ch_img, (16, 22), interpolation=cv2.INTER_CUBIC)
-            gray = convert_2_gray(resized)
-            white_img[3:25, 3:19, 0] = gray
-            gray_rgb = cv2.cvtColor(white_img, cv2.COLOR_GRAY2RGB)
-            gray_rgb = gray_rgb.astype(np.int32)
+            char_img = gray_word.crop((cx, cy, cx + cw, cy + ch))
+            white_bg = Image.new("L", (32, 32), 255)
+            char_resized = char_img.resize((16, 22))
+            white_bg.paste(char_resized, (3, 3))
+            rgb = Image.merge("RGB", (white_bg, white_bg, white_bg))
+            gray_rgb = np.array(rgb).astype(np.int32)
 
             prediction = model.predict(np.array([gray_rgb]), verbose=0)
             predicted = mapping_inverse[np.argmax(prediction)]
