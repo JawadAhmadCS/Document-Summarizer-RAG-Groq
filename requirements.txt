@@ -9,5 +9,7 @@ groq
 langchain-groq
 streamlit
 streamlit-lottie
-opencv-python
-opencv-python-headless
+Pillow
+tensorflow
+numpy
+scipy
